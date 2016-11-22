@@ -8,10 +8,11 @@ module React.Flux.Store (
   , unsafeMkStore
   , getStoreData
   , alterStore
+  , modifyStore
   , executeAction
 ) where
 
-import Control.Concurrent.MVar (MVar, newMVar, modifyMVar_, readMVar)
+import Control.Concurrent.MVar (MVar, newMVar, modifyMVar, modifyMVar_, readMVar)
 import Control.DeepSeq
 import Data.Typeable (Typeable)
 import System.IO.Unsafe (unsafePerformIO)
@@ -185,6 +186,30 @@ alterStore store action = modifyMVar_ (storeData store) $ \oldData -> do
 alterStore store action = modifyMVar_ (storeData store) (transform action)
 
 #endif
+
+modifyStore :: Typeable storeData => ReactStore storeData -> (storeData -> IO (storeData, result)) -> IO result
+
+#ifdef __GHCJS__
+
+modifyStore store action = modifyMVar (storeData store) $ \oldData -> do
+    (newData, result) <- action oldData
+
+    -- There is a hack in PropertiesAndEvents that the fake event store for propagation and prevent
+    -- default does not have a javascript store, so the store is nullRef.
+    case storeRef store of
+        ReactStoreRef ref | not $ isNull ref -> do
+            newDataE <- export newData
+            js_UpdateStore (storeRef store) newDataE
+        _ -> return ()
+
+    return (newData, result)
+
+#else
+
+modifyStore store action = modifyMVar (storeData store) action
+
+#endif
+
 
 -- | Call 'alterStore' on the store and action.
 executeAction :: SomeStoreAction -> IO ()

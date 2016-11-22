@@ -70,6 +70,7 @@ module React.Flux (
   , unsafeMkStore
   , getStoreData
   , alterStore
+  , modifyStore
   , SomeStoreAction(..)
   , executeAction
 
