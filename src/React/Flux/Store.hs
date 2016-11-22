@@ -9,6 +9,7 @@ module React.Flux.Store (
   , getStoreData
   , alterStore
   , modifyStore
+  , modifyStoreIf
   , executeAction
 ) where
 
@@ -170,7 +171,10 @@ alterStore :: StoreData storeData => ReactStore storeData -> StoreAction storeDa
 
 alterStore store action = modifyMVar_ (storeData store) $ \oldData -> do
     newData <- transform action oldData
+    updateStore' store newData
+    return newData
 
+updateStore' store newData = do
     -- There is a hack in PropertiesAndEvents that the fake event store for propagation and prevent
     -- default does not have a javascript store, so the store is nullRef.
     case storeRef store of
@@ -178,9 +182,6 @@ alterStore store action = modifyMVar_ (storeData store) $ \oldData -> do
             newDataE <- export newData
             js_UpdateStore (storeRef store) newDataE
         _ -> return ()
-
-    return newData
-
 #else
 
 alterStore store action = modifyMVar_ (storeData store) (transform action)
@@ -193,21 +194,37 @@ modifyStore :: Typeable storeData => ReactStore storeData -> (storeData -> IO (s
 
 modifyStore store action = modifyMVar (storeData store) $ \oldData -> do
     (newData, result) <- action oldData
-
-    -- There is a hack in PropertiesAndEvents that the fake event store for propagation and prevent
-    -- default does not have a javascript store, so the store is nullRef.
-    case storeRef store of
-        ReactStoreRef ref | not $ isNull ref -> do
-            newDataE <- export newData
-            js_UpdateStore (storeRef store) newDataE
-        _ -> return ()
-
+    updateStore' store newData
     return (newData, result)
 
 #else
 
 modifyStore store action = modifyMVar (storeData store) action
 
+#endif
+
+modifyStoreIf :: Typeable storeData => ReactStore storeData -> (storeData -> Bool) -> (storeData -> IO (storeData, result)) -> (storeData -> IO result) -> IO result
+
+#ifdef __GHCJS__
+
+modifyStoreIf store cond actionTrue actionFalse = modifyMVar (storeData store) $ \oldData -> do
+    if cond oldData
+        then do
+            (newData, result) <- actionTrue oldData
+            updateStore' store newData
+            return (newData, result)
+        else do
+            result <- actionFalse oldData
+            return (oldData, result)
+
+#else
+
+modifyStoreIf store cond actionTrue actionFalse = modifyMVar (storeData store) $ \oldData -> do
+    if cond oldData
+        then actionTrue oldData
+        else do
+            result <- actionFalse oldData
+            return (oldData, result)
 #endif
 
 

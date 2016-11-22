@@ -71,6 +71,7 @@ module React.Flux (
   , getStoreData
   , alterStore
   , modifyStore
+  , modifyStoreIf
   , SomeStoreAction(..)
   , executeAction
 
