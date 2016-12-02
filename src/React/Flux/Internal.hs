@@ -27,12 +27,14 @@ module React.Flux.Internal(
   , JSString
 ) where
 
+import           Control.DeepSeq
 import           Data.String (IsString(..))
 import           Data.Aeson
 import           Data.Typeable (Typeable)
 import           Control.Monad.Writer
 import           Control.Monad.Identity (Identity(..))
 import qualified Data.Text as T
+import           GHC.Generics
 
 #ifdef __GHCJS__
 import           Unsafe.Coerce
@@ -72,8 +74,9 @@ newtype ReactElementRef = ReactElementRef { reactElementRef :: JSVal }
 instance IsJSVal ReactElementRef
 
 -- | The first parameter of an event handler registered with React.
-newtype HandlerArg = HandlerArg JSVal
+newtype HandlerArg = HandlerArg JSVal deriving (Generic)
 instance IsJSVal HandlerArg
+instance NFData HandlerArg
 
 -- | The this value during the rendering function
 newtype ReactThis state props = ReactThis {reactThisRef :: JSVal }
