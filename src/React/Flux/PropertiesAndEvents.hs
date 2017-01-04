@@ -709,7 +709,9 @@ data WheelEvent = WheelEvent {
   , wheelDeltaX :: Int
   , wheelDeltaY :: Int
   , wheelDeltaZ :: Int
-} deriving (Show)
+} deriving (Show, Generic)
+
+instance NFData WheelEvent
 
 parseWheelEvent :: HandlerArg -> WheelEvent
 parseWheelEvent (HandlerArg o) = WheelEvent
