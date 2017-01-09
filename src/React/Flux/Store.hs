@@ -16,6 +16,7 @@ module React.Flux.Store (
 import Control.Concurrent.MVar (MVar, newMVar, modifyMVar, modifyMVar_, readMVar)
 import Control.DeepSeq
 import Data.Typeable (Typeable)
+import GHC.Generics (Generic)
 import System.IO.Unsafe (unsafePerformIO)
 
 #ifdef __GHCJS__
@@ -79,7 +80,7 @@ data ReactStore storeData = ReactStore {
     -- effectively operates as a lock allowing only one thread to modify the store at any one time.
     -- This lock is safe because only the 'alterStore' function ever writes this MVar.
   , storeData :: MVar storeData
-}
+} deriving (Generic)
 
 -- | Obtain the store data from a store.  Note that the store data is stored in an MVar, so
 -- 'getStoreData' can block since it uses 'readMVar'.  The 'MVar' is empty exactly when the store is
