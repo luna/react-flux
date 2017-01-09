@@ -28,7 +28,7 @@ class IsJSVal a
 #endif
 
 -- | This type is used to represent the foreign javascript object part of the store.
-newtype ReactStoreRef storeData = ReactStoreRef JSVal
+newtype ReactStoreRef storeData = ReactStoreRef JSVal deriving (Generic)
 instance IsJSVal (ReactStoreRef storeData)
 
 -- | A store contains application state, receives actions from the dispatcher, and notifies

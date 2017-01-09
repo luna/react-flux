@@ -65,9 +65,9 @@ library
                    React.Flux.Addons.React
                    React.Flux.Addons.Bootstrap
                    React.Flux.Addons.Intl
+                   React.Flux.Store
 
   other-modules: React.Flux.Views
-                 React.Flux.Store
                  React.Flux.Export
 
   default-extensions: CPP
