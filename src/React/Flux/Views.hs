@@ -1,5 +1,6 @@
 -- | Internal module containing the view definitions
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module React.Flux.Views where
 
 import Control.Monad.Writer
@@ -77,7 +78,7 @@ type ViewEventHandler = [SomeStoreAction]
 -- >        todoHeader_
 -- >        mainSection_ todoState
 -- >        todoFooter_ todoState
-defineControllerView :: (StoreData storeData, Typeable props)
+defineControllerView :: forall storeData props. (StoreData storeData, Eq storeData, Typeable props, Eq props)
                  => JSString -- ^ A name for this view, used only for debugging/console logging
                  -> ReactStore storeData -- ^ The store this controller view should attach to.
                  -> (storeData -> props -> ReactElementM ViewEventHandler ()) -- ^ The rendering function
@@ -88,7 +89,15 @@ defineControllerView :: (StoreData storeData, Typeable props)
 defineControllerView name (ReactStore store _) buildNode = unsafePerformIO $ do
     let render sd props = return $ buildNode sd props
     renderCb <- mkRenderCallback (js_ReactGetState >=> parseExport) runViewHandler render
-    ReactView <$> js_createControllerView name store renderCb
+    compState <- syncCallback2' $ \jsa jsb -> do
+        b <- parseExport $ Export jsb :: IO storeData
+        a <- parseExport $ Export jsa :: IO storeData
+        toJSVal $ a == b
+    compProps <- syncCallback2' $ \jsa jsb -> do
+        a <- parseExport $ Export jsa :: IO props
+        b <- parseExport $ Export jsb :: IO props
+        toJSVal $ a == b
+    ReactView <$> js_createControllerView name store renderCb compProps compState
 
 -- | Transform a controller view handler to a raw handler.
 runViewHandler :: ReactThis state props -> ViewEventHandler -> IO ()
@@ -161,7 +170,7 @@ defineControllerView _ _ _ = ReactView (ReactViewRef ())
 -- >
 -- >todoItem_ :: (Int, Todo) -> ReactElementM eventHandler ()
 -- >todoItem_ !todo = viewWithIKey todoItem (fst todo) todo mempty
-defineView :: Typeable props
+defineView :: forall props. (Typeable props, Eq props)
        => JSString -- ^ A name for this view, used only for debugging/console logging
        -> (props -> ReactElementM ViewEventHandler ()) -- ^ The rendering function
        -> ReactView props
@@ -171,7 +180,11 @@ defineView :: Typeable props
 defineView name buildNode = unsafePerformIO $ do
     let render () props = return $ buildNode props
     renderCb <- mkRenderCallback (const $ return ()) runViewHandler render
-    ReactView <$> js_createView name renderCb
+    compProps <- syncCallback2' $ \jsa jsb -> do
+        a <- parseExport $ Export jsa :: IO props
+        b <- parseExport $ Export jsb :: IO props
+        toJSVal $ a == b
+    ReactView <$> js_createView name renderCb compProps
 
 #else
 
@@ -242,7 +255,7 @@ liftViewToStateHandler = transHandler (\h _ -> (h, Nothing))
 -- >
 -- >todoTextInput_ :: TextInputArgs -> ReactElementM eventHandler ()
 -- >todoTextInput_ !args = view todoTextInput args mempty
-defineStatefulView :: (Typeable state, NFData state, Typeable props)
+defineStatefulView :: forall state props. (Typeable state, NFData state, Eq state, Typeable props, Eq props)
                => JSString -- ^ A name for this view, used only for debugging/console logging
                -> state -- ^ The initial state
                -> (state -> props -> ReactElementM (StatefulViewEventHandler state) ()) -- ^ The rendering function
@@ -254,7 +267,15 @@ defineStatefulView name initial buildNode = unsafePerformIO $ do
     initialRef <- export initial
     let render state props = return $ buildNode state props
     renderCb <- mkRenderCallback (js_ReactGetState >=> parseExport) runStateViewHandler render
-    ReactView <$> js_createStatefulView name initialRef renderCb
+    compProps <- syncCallback2' $ \jsa jsb -> do
+        a <- parseExport $ Export jsa :: IO props
+        b <- parseExport $ Export jsb :: IO props
+        toJSVal $ a == b
+    compState <- syncCallback2' $ \jsa jsb -> do
+        b <- parseExport $ Export jsb :: IO state
+        a <- parseExport $ Export jsa :: IO state
+        toJSVal $ a == b
+    ReactView <$> js_createStatefulView name initialRef renderCb compProps compState
 
 -- | Transform a stateful view event handler to a raw event handler
 runStateViewHandler :: (Typeable state, NFData state)
@@ -323,32 +344,40 @@ foreign import javascript unsafe
     js_RenderCbSetResults :: RenderCbArg -> JSVal -> ReactElementRef -> IO ()
 
 foreign import javascript unsafe
-    "hsreact$mk_ctrl_view($1, $2, $3)"
+    "hsreact$mk_ctrl_view($1, $2, $3, $4, $5)"
     js_createControllerView :: JSString
                             -> ReactStoreRef storeData
                             -> Callback (JSVal -> JSVal -> IO ())
+                            -> Callback (JSVal -> JSVal -> IO JSVal)
+                            -> Callback (JSVal -> JSVal -> IO JSVal)
                             -> IO (ReactViewRef props)
 
 -- | Create a view with no state.
 foreign import javascript unsafe
-    "hsreact$mk_view($1, $2)"
+    "hsreact$mk_view($1, $2, $3)"
     js_createView :: JSString
                   -> Callback (JSVal -> JSVal -> IO ())
+                  -> Callback (JSVal -> JSVal -> IO JSVal)
                   -> IO (ReactViewRef props)
 
 -- | Create a view which tracks its own state.  Similar releasing needs to happen for callbacks and
 -- properties as for controller views.
 foreign import javascript unsafe
-    "hsreact$mk_stateful_view($1, $2, $3)"
+    "hsreact$mk_stateful_view($1, $2, $3, $4, $5)"
     js_createStatefulView :: JSString
                           -> Export state
                           -> Callback (JSVal -> JSVal -> IO ())
+                          -> Callback (JSVal -> JSVal -> IO JSVal)
+                          -> Callback (JSVal -> JSVal -> IO JSVal)
                           -> IO (ReactViewRef props)
 
 foreign import javascript unsafe
-    "hsreact$mk_lifecycle_view($1, $2, $3, $4, $5, $6, $7, $8, $9)"
+    "hsreact$mk_lifecycle_view($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)"
     js_makeLifecycleView :: JSString -> Export state -> Callback (JSVal -> JSVal -> IO ())
-                         -> JSVal -> JSVal -> JSVal -> JSVal -> JSVal -> JSVal -> IO (ReactViewRef props)
+                         -> JSVal -> JSVal -> JSVal -> JSVal -> JSVal -> JSVal
+                         -> Callback (JSVal -> JSVal -> IO JSVal)
+                         -> Callback (JSVal -> JSVal -> IO JSVal)
+                         -> IO (ReactViewRef props)
 
 mkRenderCallback :: Typeable props
                  => (ReactThis state props -> IO state) -- ^ parse state
@@ -559,7 +588,7 @@ instance (FromJSVal a, ArgumentsToProps props b) => ArgumentsToProps props (a ->
 --
 -- 4. Call the javascript function with two arguments to return a React element which can be used
 -- in a JavaScript React class rendering function.
--- 
+--
 --       @
 --       var myJsView = React.createClass({
 --           render: function() {
@@ -571,4 +600,3 @@ exportViewToJavaScript :: (Typeable props, ArgumentsToProps props func) => React
 exportViewToJavaScript v func = do
     (_callbackToRelease, wrappedCb) <- exportViewToJs (reactView v) (\arr -> returnViewFromArguments arr 0 func)
     return wrappedCb
-

@@ -23,7 +23,7 @@ import           GHC.Generics       (Generic)
 
 data ClockState = ClockState {csTime :: !(Maybe UTCTime)
                              }
-                deriving (Show, Typeable)
+                deriving (Show, Typeable, Eq)
 
 data ClockAction = ClockInit
                  | ClockTick UTCTime

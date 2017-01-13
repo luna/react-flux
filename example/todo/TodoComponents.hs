@@ -20,6 +20,12 @@ data TextInputArgs = TextInputArgs {
     , tiaValue :: Maybe T.Text
 } deriving (Typeable)
 
+instance Eq TextInputArgs where
+    a == b = tiaId a == tiaId b
+          && tiaClass a == tiaClass b
+          && tiaPlaceholder a == tiaPlaceholder b
+          && tiaValue a == tiaValue b
+
 -- | The text input stateful view.  The state is the text that has been typed into the textbox
 -- but not yet saved.  The save is triggered either on enter or blur, which resets the state/content
 -- of the text box to the empty string.

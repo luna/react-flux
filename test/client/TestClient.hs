@@ -236,7 +236,7 @@ cssTransitions = defineView "css transitions" $ \items ->
 --------------------------------------------------------------------------------
 
 data ShouldComponentUpdateData = ShouldComponentUpdateData Int String
-    deriving (Typeable, Show)
+    deriving (Eq, Typeable, Show)
 
 -- | The data in the store is four 'ShouldComponentUpdateData's.  The reason is we test
 -- views with tuples of size up to 3, and so we want 4 entries in the store to be able to
@@ -247,7 +247,7 @@ data ShouldComponentUpdate = ShouldComponentUpdate {
   , scu2 :: !ShouldComponentUpdateData -- ^ only passed to the pair view
   , scu3 :: !ShouldComponentUpdateData -- ^ only passed to the triple view
   , scu4 :: !ShouldComponentUpdateData -- ^ not passed to any view
-} deriving (Typeable, Show)
+} deriving (Eq, Typeable, Show)
 
 data SCUIndex = SCU1 | SCU2 | SCU3 | SCU4
     deriving (Show, Eq, Typeable, Generic, NFData, Bounded, Enum)
@@ -355,7 +355,7 @@ shouldComponentUpdateSpec = defineControllerView "should component update" shoul
 --------------------------------------------------------------------------------
 
 data CallbackViewProps = CallbackViewProps Int String
-    deriving (Show, Typeable)
+    deriving (Eq, Show, Typeable)
 
 callbackArgsToProps :: Int -> String -> ReturnProps CallbackViewProps
 callbackArgsToProps i s = ReturnProps $ CallbackViewProps i s

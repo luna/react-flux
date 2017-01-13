@@ -44,7 +44,7 @@ cssTransitionGroup _ x = x
 -- Perf
 --------------------------------------------------------------------------------
 
-data PerfStoreData = PerfStoreData { perfIsActive :: Bool }
+data PerfStoreData = PerfStoreData { perfIsActive :: Bool } deriving (Generic, Eq)
 
 -- | What to print after stopping performance measurement.  See
 -- <https://facebook.github.io/react/docs/perf.html> for documentation.
@@ -53,7 +53,6 @@ data PerfPrint = PerfPrintInclusive
                | PerfPrintWasted
                | PerfPrintDOM
     deriving (Show, Eq, Generic)
-
 instance NFData PerfPrint
 
 -- | An action to start or stop performance measurement.  For details, see

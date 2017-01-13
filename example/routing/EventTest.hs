@@ -28,7 +28,7 @@ data ETState = ETState
     { etActions :: [ETAction]
     , etText    :: !T.Text
     , etBool    :: !Bool
-    } deriving (Show, Typeable)
+    } deriving (Eq, Show, Typeable)
 
 data ETAction
     = ETInit
@@ -50,7 +50,7 @@ data ETAction
     | DoubleClickA
     | MouseMoveA Int Int
     | ScrollA Int
-    deriving (Show, Typeable, Generic, NFData)
+    deriving (Eq, Show, Typeable, Generic, NFData)
 
 instance StoreData ETState where
   type StoreAction ETState = ETAction

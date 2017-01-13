@@ -52,6 +52,7 @@ import React.Flux.Export
 import GHCJS.Foreign (jsNull)
 import GHCJS.Foreign.Callback
 import GHCJS.Types (JSVal, jsval)
+import GHCJS.Marshal (toJSVal)
 
 #endif
 
@@ -112,7 +113,7 @@ lifecycleConfig = LifecycleViewConfig
 -- >            { lRender = \state props -> ...
 -- >            , lComponentWillMount = \propsAndState setStateFn -> ...
 -- >            }
-defineLifecycleView :: (Typeable props, Typeable state, NFData state)
+defineLifecycleView :: forall props state. (Typeable props, Eq props, Typeable state, NFData state, Eq state)
               => String -> state -> LifecycleViewConfig props state -> ReactView props
 
 #ifdef __GHCJS__
@@ -154,6 +155,15 @@ defineLifecycleView name initialState cfg = unsafePerformIO $ do
     willUnmountCb <- mkLCallback1 (lComponentWillUnmount cfg) $ \f this ->
         f (dom this)
 
+    compState <- syncCallback2' $ \jsa jsb -> do
+        b <- parseExport $ Export jsb :: IO state
+        a <- parseExport $ Export jsa :: IO state
+        toJSVal $ a == b
+
+    compProps <- syncCallback2' $ \jsa jsb -> do
+        a <- parseExport $ Export jsa :: IO props
+        b <- parseExport $ Export jsb :: IO props
+        toJSVal $ a == b
     -- willMountCbRef <- toJSVal willMountCb
     -- didMountCbRef <- toJSVal didMountCb
     -- willRecvPropsCbRef <- toJSVal willRecvPropsCb
@@ -161,7 +171,7 @@ defineLifecycleView name initialState cfg = unsafePerformIO $ do
     -- didUpdateCbRef   <- toJSVal didUpdateCb
     -- willUnmountCbRef <- toJSVal willUnmountCb
     ReactView <$> js_makeLifecycleView (toJSString name) initialRef
-      renderCb willMountCb didMountCb willRecvPropsCb willUpdateCb didUpdateCb willUnmountCb
+      renderCb willMountCb didMountCb willRecvPropsCb willUpdateCb didUpdateCb willUnmountCb compProps compState
 
 mkLCallback1 :: (Typeable props, Typeable state)
              => Maybe (LPropsAndState props state -> f)

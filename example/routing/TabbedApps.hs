@@ -1,12 +1,14 @@
-{-# LANGUAGE DeriveAnyClass     #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric      #-}
-{-# LANGUAGE FlexibleContexts   #-}
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE RankNTypes         #-}
-{-# LANGUAGE RecordWildCards    #-}
-{-# LANGUAGE TupleSections      #-}
-{-# LANGUAGE TypeFamilies       #-}
+{-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE DeriveDataTypeable   #-}
+{-# LANGUAGE DeriveGeneric        #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE RankNTypes           #-}
+{-# LANGUAGE RecordWildCards      #-}
+{-# LANGUAGE TupleSections        #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 -- |
 
@@ -36,16 +38,21 @@ import           GHC.Generics        (Generic)
 import qualified Web.Routes          as WR
 
 type ParentRouter = Maybe ([T.Text] -> T.Text)
+instance Eq ([T.Text] -> T.Text) where
+    _ == _ = True
 
 data Tab = Tab {tabName    :: AppName
                , tabView   :: ParentRouter -> AppView ()
                , tabRouter :: Maybe AppRouter
                }
+instance Eq Tab where
+  a == b = tabName a == tabName b
+
 data TabbedState =
   TabbedState { tsFocus :: !Int
               , tsTabs  :: ![Tab]
               }
-  deriving Typeable
+  deriving (Typeable, Eq)
 
 data TabbedAction = SwitchApp !Int (Maybe [T.Text])
                   | TabbedInit

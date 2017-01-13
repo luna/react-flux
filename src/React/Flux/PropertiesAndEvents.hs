@@ -101,6 +101,7 @@ import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as M
 import           Data.Word
 import           Data.Int
+import           GHC.Generics
 
 import           React.Flux.Internal
 import           React.Flux.Store
@@ -213,7 +214,7 @@ callback :: CallbackFunction handler func => JSString -> func -> PropertyOrHandl
 callback name func = CallbackPropertyWithArgumentArray name $ \arr -> applyFromArguments arr 0 func
 
 -- | Create a zero-argument callback property.  When this callback function is executed, it
--- will render the given view and return the resulting React element.  If you need to 
+-- will render the given view and return the resulting React element.  If you need to
 -- create a callback which expects arguments, use 'callbackViewWithProps' instead.
 callbackView :: JSString -> ReactView () -> PropertyOrHandler handler
 callbackView name v = CallbackPropertyReturningView name (const $ return ()) (reactView v)
@@ -289,7 +290,8 @@ classNames xs = "className" @= T.intercalate " " names
 
 -- | A reference to the object that dispatched the event.
 -- <https://developer.mozilla.org/en-US/docs/Web/API/Event/target>
-newtype EventTarget = EventTarget JSVal
+newtype EventTarget = EventTarget JSVal deriving (Generic)
+instance NFData EventTarget
 instance IsJSVal EventTarget
 
 instance Show (EventTarget) where
@@ -312,7 +314,9 @@ data Event = Event
     , evtTarget :: EventTarget
     , evtTimestamp :: Int
     , evtHandlerArg :: HandlerArg
-    } deriving (Show)
+    } deriving (Show, Generic)
+
+instance NFData Event
 
 -- | A version of 'eventTargetProp' which accesses the property of 'evtTarget' in the event.  This
 -- is useful for example:
@@ -444,8 +448,9 @@ data KeyboardEvent = KeyboardEvent
   , keyRepeat :: Bool
   , keyShiftKey :: Bool
   , keyWhich :: Int
-  }
+  } deriving (Generic)
 
+instance NFData KeyboardEvent
 instance Show KeyboardEvent where
     show (KeyboardEvent k1 k2 k3 _ k4 k5 k6 k7 k8 k9 k10 k11) =
         show (k1, k2, k3, k4, k5, k6, k7, k8, k9, k10, k11)
@@ -526,8 +531,9 @@ data MouseEvent = MouseEvent
   , mouseScreenX :: Int
   , mouseScreenY :: Int
   , mouseShiftKey :: Bool
-  }
+  } deriving (Generic)
 
+instance NFData MouseEvent
 instance Show MouseEvent where
     show (MouseEvent m1 m2 m3 m4 m5 m6 _ m7 m8 m9 m10 m11 m12 m13)
         = show (m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13)
@@ -627,7 +633,9 @@ data Touch = Touch {
   , touchClientY :: Int
   , touchPageX :: Int
   , touchPageY :: Int
-} deriving (Show)
+} deriving (Show, Generic)
+
+instance NFData Touch
 
 data TouchEvent = TouchEvent {
     touchAltKey :: Bool
@@ -638,7 +646,9 @@ data TouchEvent = TouchEvent {
   , touchShiftKey :: Bool
   , touchTargets :: [Touch]
   , touches :: [Touch]
-  }
+  } deriving (Generic)
+
+instance NFData TouchEvent
 
 instance Show TouchEvent where
     show (TouchEvent t1 t2 t3 _ t4 t5 t6 t7)
@@ -703,7 +713,9 @@ data WheelEvent = WheelEvent {
   , wheelDeltaX :: Int
   , wheelDeltaY :: Int
   , wheelDeltaZ :: Int
-} deriving (Show)
+} deriving (Show, Generic)
+
+instance NFData WheelEvent
 
 parseWheelEvent :: HandlerArg -> WheelEvent
 parseWheelEvent (HandlerArg o) = WheelEvent
