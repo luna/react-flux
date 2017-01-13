@@ -633,7 +633,9 @@ data Touch = Touch {
   , touchClientY :: Int
   , touchPageX :: Int
   , touchPageY :: Int
-} deriving (Show)
+} deriving (Show, Generic)
+
+instance NFData Touch
 
 data TouchEvent = TouchEvent {
     touchAltKey :: Bool
@@ -644,7 +646,9 @@ data TouchEvent = TouchEvent {
   , touchShiftKey :: Bool
   , touchTargets :: [Touch]
   , touches :: [Touch]
-  }
+  } deriving (Generic)
+
+instance NFData TouchEvent
 
 instance Show TouchEvent where
     show (TouchEvent t1 t2 t3 _ t4 t5 t6 t7)

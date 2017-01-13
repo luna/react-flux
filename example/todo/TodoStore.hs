@@ -11,11 +11,11 @@ data Todo = Todo {
     todoText :: T.Text
   , todoComplete :: Bool
   , todoIsEditing :: Bool
-} deriving (Show, Typeable)
+} deriving (Eq, Show, Typeable)
 
 newtype TodoState = TodoState {
     todoList :: [(Int, Todo)]
-} deriving (Show, Typeable)
+} deriving (Eq, Show, Typeable)
 
 data TodoAction = TodoCreate T.Text
                 | TodoDelete Int
