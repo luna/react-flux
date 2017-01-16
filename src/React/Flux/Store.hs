@@ -9,11 +9,12 @@ module React.Flux.Store (
   , getStoreData
   , alterStore
   , modifyStore
-  , modifyStoreIf
+  , modifyStoreNoCommit
+  , storeCommit
   , executeAction
 ) where
 
-import Control.Concurrent.MVar (MVar, newMVar, modifyMVar, modifyMVar_, readMVar)
+import Control.Concurrent.MVar (MVar, newMVar, modifyMVar, modifyMVar_, readMVar, withMVar)
 import Control.DeepSeq
 import Data.Typeable (Typeable)
 import GHC.Generics (Generic)
@@ -189,9 +190,17 @@ alterStore store action = modifyMVar_ (storeData store) (transform action)
 
 #endif
 
+modifyStoreNoCommit :: Typeable storeData => ReactStore storeData -> (storeData -> IO (storeData, result)) -> IO result
+modifyStoreNoCommit store action = modifyMVar (storeData store) action
+
 modifyStore :: Typeable storeData => ReactStore storeData -> (storeData -> IO (storeData, result)) -> IO result
 
+storeCommit :: Typeable storeData => ReactStore storeData -> IO ()
+
 #ifdef __GHCJS__
+storeCommit store = withMVar (storeData store) $ \dat ->
+    updateStore' store dat
+
 
 modifyStore store action = modifyMVar (storeData store) $ \oldData -> do
     (newData, result) <- action oldData
@@ -200,32 +209,10 @@ modifyStore store action = modifyMVar (storeData store) $ \oldData -> do
 
 #else
 
+storeCommit = const $ return ()
+
 modifyStore store action = modifyMVar (storeData store) action
 
-#endif
-
-modifyStoreIf :: Typeable storeData => ReactStore storeData -> (storeData -> Bool) -> (storeData -> IO (storeData, result)) -> (storeData -> IO result) -> IO result
-
-#ifdef __GHCJS__
-
-modifyStoreIf store cond actionTrue actionFalse = modifyMVar (storeData store) $ \oldData -> do
-    if cond oldData
-        then do
-            (newData, result) <- actionTrue oldData
-            updateStore' store newData
-            return (newData, result)
-        else do
-            result <- actionFalse oldData
-            return (oldData, result)
-
-#else
-
-modifyStoreIf store cond actionTrue actionFalse = modifyMVar (storeData store) $ \oldData -> do
-    if cond oldData
-        then actionTrue oldData
-        else do
-            result <- actionFalse oldData
-            return (oldData, result)
 #endif
 
 
