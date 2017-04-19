@@ -13,26 +13,19 @@ The [haddocks](https://hackage.haskell.org/package/react-flux) contain the docum
 I use stack to build my frontend which uses react-flux.  I set up stack and
 ghcjs using [these
 instructions](http://docs.haskellstack.org/en/stable/ghcjs/).  Note that
-react-flux requires GHCJS master (a.k.a. improved base).  I keep updated with
-the latest version of GHCJS and lts.  As I write this, I use the following `stack.yaml`,
-but as new LTS versions or new GHCJS versions come out I keep updating to them (and
-probably forget to update this README :)
+react-flux requires GHCJS master (a.k.a. improved base).  Here is an example
+stack.yaml file.
 
 ~~~
-resolver: lts-6.1
-packages:
-    - .
-extra-deps:
-    - react-flux-(version)
-
-compiler: ghcjs-0.2.0.20160414_ghc-7.10.3
+resolver: lts-7.19
+compiler: ghcjs-0.2.1.9007019_ghc-8.0.1
 compiler-check: match-exact
-setup-info:
-  ghcjs:
-    source:
-      ghcjs-0.2.0.20160414_ghc-7.10.3:
-        url: https://s3.amazonaws.com/ghcjs/ghcjs-0.2.0.20160414_ghc-7.10.3.tar.gz
-        sha1: 6d6f307503be9e94e0c96ef1308c7cf224d06be3
+packages:
+- .
+- location:
+    git: https://github.com/luna/react-flux
+    commit: 2d1ce949cd013dbccf01853a531db4870cac9a16
+  extra-dep: true
 ~~~
 
 
